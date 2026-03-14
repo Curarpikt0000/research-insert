@@ -1,7 +1,8 @@
 import os
 import json
 import datetime
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from notion_client import Client
 
 # 1. 初始化环境变量与客户端
@@ -10,11 +11,11 @@ DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 notion = Client(auth=NOTION_TOKEN)
-genai.configure(api_key=GEMINI_API_KEY)
+# 使用最新的 genai 客户端初始化方式
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def fetch_kol_insights():
-    """调用 Gemini API 获取总结并强制返回 JSON 格式"""
-    # 这里使用的是您的原始设定，要求返回严格的 JSON 数组
+    """调用最新的 Gemini API 获取总结并强制返回 JSON 格式"""
     prompt = """
     全网搜索并总结过去24小时内全球顶级投行及核心KOL的最新研报。
     重点覆盖人物/机构：
@@ -33,13 +34,15 @@ def fetch_kol_insights():
     - "suggestion": 交易建议与代码 (String)
     """
     
-    # 强制模型输出 JSON 格式
-    model = genai.GenerativeModel(
-        'gemini-1.5-pro-latest',
-        generation_config={"response_mime_type": "application/json"}
+    # 使用最新语法的 JSON 强制输出配置，并使用稳定的 1.5-pro 模型
+    response = client.models.generate_content(
+        model='gemini-1.5-pro',
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
     )
     
-    response = model.generate_content(prompt)
     return json.loads(response.text)
 
 def push_to_notion(data_list):
@@ -51,7 +54,6 @@ def push_to_notion(data_list):
             notion.pages.create(
                 parent={"database_id": DATABASE_ID},
                 properties={
-                    # 确保这里的属性名与您 Notion 表头的精确名称一致（区分大小写和空格）
                     "Name": {"title": [{"text": {"content": item.get("Name", "Unknown")}}]},
                     "KOL or IB View": {"rich_text": [{"text": {"content": item.get("KOL_or_IB_View", "")}}]},
                     "Date": {"date": {"start": today_str}},

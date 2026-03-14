@@ -34,9 +34,9 @@ def fetch_kol_insights():
     - "suggestion": 交易建议与代码 (String)
     """
     
-    # 使用最新语法的 JSON 强制输出配置，并使用稳定的 1.5-pro 模型
+    # 使用最新语法的 JSON 强制输出配置
     response = client.models.generate_content(
-        model='gemini-1.5-pro',
+        model='gemini-2.5-flash', # ✅ 替换为最新且速度更快的 2.5-flash 模型
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",

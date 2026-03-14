@@ -54,39 +54,48 @@ def fetch_kol_insights():
 def push_to_notion(data_list):
     today_str = datetime.datetime.now().strftime("%Y-%m-%d")
     
-    # 防御性过滤
-    filtered_data = [item for item in data_list if item.get("Name_of_KOL") not in ["AI Assistant", "AI", "System"]]
+    # 防御性过滤：剔除无效的系统回复
+    filtered_data = [item for item in data_list if item.get("Name_of_KOL") not in ["AI Assistant", "AI", "System", None, ""]]
     
     for item in filtered_data:
         try:
-            # 获取提取的字段，赋予默认值防错
-            kol_name = item.get("Name_of_KOL", "Unknown KOL")
-            # 将原来粗暴的 Name 改为了 Title，使 Notion 页面标题更好看
-            title = item.get("Title", f"{kol_name}的最新观点") 
-            
+            # 1. 提取并清理文本数据 (防止 None 导致报错，限制最大长度防止超载)
+            kol_name = str(item.get("Name_of_KOL", "Unknown")).replace(",", " ").strip()
+            title = str(item.get("Title", f"{kol_name} 的最新观点")).strip()
+            comments = str(item.get("comments", "")).strip()[:2000] # Notion 限制单个 block 2000字符
+            suggestion = str(item.get("suggestion", "")).strip()[:2000]
+
+            # 2. 构建基础属性 (标题、日期、文本)
             properties = {
-                # Title 属性对应 Notion 中的 "Name" 列 (Aa 图标)
                 "Name": {"title": [{"text": {"content": title}}]},
                 "Date": {"date": {"start": today_str}},
-                "comments": {"rich_text": [{"text": {"content": item.get("comments", "")}}]},
-                "suggestion": {"rich_text": [{"text": {"content": item.get("suggestion", "")}}]}
+                "comments": {"rich_text": [{"text": {"content": comments}}]},
+                "suggestion": {"rich_text": [{"text": {"content": suggestion}}]}
             }
             
-            # --- 新增：Name of KOL 映射 (Select 类型) ---
-            if kol_name != "Unknown KOL":
-                properties["Name of KOL"] = {"select": {"name": str(kol_name)}}
+            # 3. 严格清洗 Select 标签数据 (绝不允许包含逗号或为空)
+            if kol_name and kol_name != "Unknown":
+                properties["Name of KOL"] = {"select": {"name": kol_name}}
                 
-            if item.get("KOL_or_IB_View"):
-                properties["KOL or IB View"] = {"select": {"name": str(item.get("KOL_or_IB_View"))}}
-            if item.get("Sector"):
-                properties["Sector"] = {"select": {"name": str(item.get("Sector"))}}
-            if item.get("Detail_Sector"):
-                properties["Detail Sector"] = {"select": {"name": str(item.get("Detail_Sector"))}}
+            kol_view = str(item.get("KOL_or_IB_View", "")).replace(",", " ").strip()
+            if kol_view:
+                properties["KOL or IB View"] = {"select": {"name": kol_view}}
+                
+            sector = str(item.get("Sector", "")).replace(",", " ").strip()
+            if sector:
+                properties["Sector"] = {"select": {"name": sector}}
+                
+            detail = str(item.get("Detail_Sector", "")).replace(",", " ").strip()
+            if detail:
+                properties["Detail Sector"] = {"select": {"name": detail}}
 
+            # 4. 执行写入
             notion.pages.create(parent={"database_id": DATABASE_ID}, properties=properties)
-            print(f"✅ 成功写入: {kol_name} | {title}")
+            print(f"✅ 成功写入: [{kol_name}] {title}")
+            
         except Exception as e:
-            print(f"❌ 写入失败 {item.get('Name_of_KOL')}: {str(e)}")
+            # 打印极其详细的报错原因，方便一眼看出是哪个字段惹的祸
+            print(f"❌ 写入失败 [{item.get('Name_of_KOL')}]: {str(e)}")
 
 if __name__ == "__main__":
     print("开始获取全球研报与KOL观点...")

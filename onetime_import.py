@@ -8,7 +8,6 @@ DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 notion = Client(auth=NOTION_TOKEN)
 
-# 之前我们讨论过的核心精华数据
 historical_data = [
     {
         "Name": "Rick Rule", "KOL_or_IB_View": "KOL", "Sector": "Precious Metals", "Detail_Sector": "Silver Miners",
@@ -66,3 +65,4 @@ def push_to_notion():
     print("🎉 一次性历史数据导入完毕！请前往 Notion 查看。")
 
 if __name__ == "__main__":
+    push_to_notion()

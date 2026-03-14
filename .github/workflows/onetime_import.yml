@@ -1,0 +1,28 @@
+name: One-Time Data Import
+
+on:
+  workflow_dispatch: # 这个指令代表“仅限手动点击运行”，没有任何定时触发器
+
+jobs:
+  run-import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        # 一次性导入只需要 notion-client，不需要装大模型库，速度会非常快
+        run: |
+          python -m pip install --upgrade pip
+          pip install notion-client==2.2.1
+
+      - name: Run One-Time Import Script
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: python onetime_import.py

@@ -2,9 +2,9 @@ import os
 import datetime
 from notion_client import Client
 
-# 请替换为您真实的 Token 和 Database ID
-NOTION_TOKEN = "您的_NOTION_TOKEN"
-DATABASE_ID = "32347eb5fd3c8087b9c0f409f95f664e"
+# 直接读取您 GitHub Secrets 里的配置，安全不泄露
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 notion = Client(auth=NOTION_TOKEN)
 
@@ -53,11 +53,12 @@ def push_to_notion():
                 "Name": {"title": [{"text": {"content": item["Name"]}}]},
                 "Date": {"date": {"start": today_str}},
                 "comments": {"rich_text": [{"text": {"content": item["comments"]}}]},
-                "suggestion": {"rich_text": [{"text": {"content": item["suggestion"]}}]},
-                "KOL or IB View": {"select": {"name": item["KOL_or_IB_View"]}},
-                "Sector": {"select": {"name": item["Sector"]}},
-                "Detail Sector": {"select": {"name": item["Detail_Sector"]}}
+                "suggestion": {"rich_text": [{"text": {"content": item["suggestion"]}}]}
             }
+            if item.get("KOL_or_IB_View"): properties["KOL or IB View"] = {"select": {"name": str(item.get("KOL_or_IB_View"))}}
+            if item.get("Sector"): properties["Sector"] = {"select": {"name": str(item.get("Sector"))}}
+            if item.get("Detail_Sector"): properties["Detail Sector"] = {"select": {"name": str(item.get("Detail_Sector"))}}
+
             notion.pages.create(parent={"database_id": DATABASE_ID}, properties=properties)
             print(f"✅ 成功导入: {item['Name']}")
         except Exception as e:
@@ -65,4 +66,3 @@ def push_to_notion():
     print("🎉 一次性历史数据导入完毕！请前往 Notion 查看。")
 
 if __name__ == "__main__":
-    push_to_notion()

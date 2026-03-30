@@ -21,25 +21,26 @@ def fetch_kol_insights():
 
     【监控名单与分组】（必须严格覆盖所有人，只增不减）：
     1. 核心宏观与贵金属：Luke Gromen, Ray Dalio, Daniel Ghali, Daniel Oliver, Jason Hunter, David Morgan, Rick Rule, Peter Schiff, Zoltan Pozsar, Steve Penny, Peter Krauth, Craig Hemke, Robert Kiyosaki, Willem Middelkoop, David Garofalo, James Rickards, Larry McDonald, David Stockman, Matthew Piepenburg.
-    2. 矿业实战与盘面狙击：Keith Neumeyer, Jeff Clark, Gareth Soloway, Vince Lanci.
+    2. 矿业实战与盘面狙击：Keith Neumeyer, Jeff Clark, Gareth Soloway, Vince Lanci, Robert Gottlieb.
     3. 科技/AI/策略：Dan Ives, Michael Hartnett, Cathie Wood, Raoul Pal, Ivan Zhao (Notion).
     4. 能源/大宗：Eric Nuttall, Doomberg, Rory Johnston, Kuppy.
     5. 顶级投行：Goldman Sachs, Morgan Stanley, Citi, UBS.
     6. 神学预言与另类财富转移：Brandon Biggs (需重点挖掘他近期在 YouTube 和 X 上关于黄金、白银、加密货币或宏观灾难的异象预言与报告)。
+    7. 应急与官方基准数据：FEMA (联邦应急管理署)。
 
     【深度挖掘法则（必须严格执行）】：
-    1. 动态追踪（时间线对比）：不要只给一个静态结论。你必须搜索并对比他们最近 24 小时的表态与前几天/前几个月的观点。他们改口了吗？目标价微调了吗？（针对 Brandon Biggs，重点对比他最新的异象和之前的预言是否一致）。
-    2. 底层数据榨取：绝不允许空洞的“看多/看空”。必须提取他们观点的“物理依据”或“量化指标”（例如：Daniel Ghali 关注的 CTA 拥挤度与 SGE 溢价、Rick Rule 关注的矿企自由现金流、Hartnett 的牛熊 9.4 指标等。针对 Brandon Biggs，提取他声称看到的具体数字或“启示”）。
-    3. 极端推演：如果该人物过去 24 小时没有公开发言，你必须根据他长期的核心理论框架，结合今天最新的宏观大事件（如金银暴跌、油价飙升、降息预期变化），强制推演出他今天**必然会采取的应对策略**或可能会做出的预言！
+    1. 动态追踪（时间线对比）：不要只给一个静态结论。你必须搜索并对比他们最近 24 小时的表态与前几天/前几个月的观点。他们改口了吗？目标价微调了吗？
+    2. 底层数据榨取与数值红线（极其重要）：提取观点的“物理依据”或“量化指标”。**特别要求：针对 FEMA，必须获取其每天公布的相关数值并输出。所有提取的数值必须有明确的权威来源，如果因网络或接口延迟无法获取最新的确切数值，你必须在结果中标注为 "N/A" 或 "数据获取中"，绝对禁止基于任何算法进行趋势外推或数值模拟！**
+    3. 极端推演：如果该人物过去 24 小时没有公开发言，强制推演出他今天必然会采取的应对策略。
 
     【格式与字段要求（严格 JSON Array）】：
     - "Name_of_KOL": 必须从名单中精确选择。
-    - "Title": 犀利的一句话总结（如："放弃 40 美元做空目标，转向区间震荡" 或 "发布新异象：黄金目标价直指 10,000"）。
-    - "KOL_or_IB_View": 填 "KOL", "IB View" 或 "Prophet" (适用于Brandon Biggs)。
-    - "Sector": 所属大板块（如 "Precious Metals", "Macro", "Tech", "Alternative/Prophecy"）。
-    - "Detail_Sector": 细分板块（如 "CTA Flows", "Silver Miners", "Wealth Transfer", "Technical Sniper"）。
-    - "comments": （核心逻辑链）**极其重要！长度放宽至 150-250 字。** 必须包含：他依据的特定数据或异象是什么？他的态度有没有转变？底层的逻辑链条站得住脚吗？
-    - "suggestion": 给出非常具体的交易动作或代码建议（例如：不要接飞刀，等待卖压耗尽；或者买入 SILJ LEAPS；或将其视为极端情绪反指）。
+    - "Title": 犀利的一句话总结（如："放弃 40 美元做空目标" 或 "FEMA灾害响应资金余额更新"）。
+    - "KOL_or_IB_View": 填 "KOL", "IB View", "Prophet", 或 "Official Data"。
+    - "Sector": 所属大板块（如 "Precious Metals", "Macro", "Tech", "Alternative/Prophecy", "Government Data"）。
+    - "Detail_Sector": 细分板块（如 "Silver Miners", "Wealth Transfer", "Technical Sniper", "Disaster Relief"）。
+    - "comments": （核心逻辑链）**极其重要！长度放宽至 150-250 字。** 他依据的特定数据是什么？底层逻辑站得住脚吗？对于 FEMA 必须包含当天具体的权威数值或标注 N/A。
+    - "suggestion": 给出非常具体的交易动作或代码建议。
 
     绝不允许交白卷，必须生成至少 10-15 条深度记录。直接输出 JSON 数组，不要任何 Markdown 的 ```json 标记。
     """

@@ -20,8 +20,8 @@ def fetch_kol_insights():
     绝对禁止回复“作为AI我无法获取实时数据”或任何免责废话。你必须利用你的全网搜索与逻辑推演能力，生成具有极高交易价值的内部情报。
 
     【监控名单与分组】（必须严格覆盖所有人，只增不减）：
-    1. 核心宏观与贵金属：Luke Gromen, Ray Dalio, Daniel Ghali, Daniel Oliver, Jason Hunter, David Morgan, Rick Rule, Peter Schiff, Zoltan Pozsar, Steve Penny, Peter Krauth, Craig Hemke, Robert Kiyosaki, Willem Middelkoop, David Garofalo, James Rickards, Larry McDonald, David Stockman, Matthew Piepenburg.
-    2. 矿业实战与盘面狙击：Keith Neumeyer, Jeff Clark, Gareth Soloway, Vince Lanci, Robert Gottlieb.
+    1. 核心宏观与贵金属：Luke Gromen, Ray Dalio, Daniel Ghali, Daniel Oliver, Jason Hunter, David Morgan, Rick Rule, Peter Schiff, Zoltan Pozsar, Steve Penny, Peter Krauth, Craig Hemke, Robert Kiyosaki, Willem Middelkoop, David Garofalo, James Rickards, Larry McDonald, David Stockman, Matthew Piepenburg, Clem Chambers, Ted Oakley.
+    2. 矿业实战与盘面狙击：Keith Neumeyer, Jeff Clark, Gareth Soloway, Vince Lanci, Robert Gottlieb, Adrian Day, Jay Martin, Bob Moriarty, Bob Coleman.
     3. 科技/AI/策略：Dan Ives, Michael Hartnett, Cathie Wood, Raoul Pal, Ivan Zhao (Notion).
     4. 能源/大宗：Eric Nuttall, Doomberg, Rory Johnston, Kuppy.
     5. 顶级投行：Goldman Sachs, Morgan Stanley, Citi, UBS.

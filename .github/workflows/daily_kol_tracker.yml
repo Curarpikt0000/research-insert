@@ -9,6 +9,10 @@ on:
 jobs:
   run-tracker:
     runs-on: ubuntu-latest
+    # 【新增】必须赋予写入权限，否则脚本无法将数据保存回仓库或部署网页
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -23,9 +27,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Tracker Script
+      - name: Run Tracker Script (Main Data Fetcher)
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
+
+      # 【新增步骤 1】运行 Dashboard 生成脚本，生成 index.html
+      - name: Run Dashboard Generator
+        run: python generate_dashboard.py
+
+      # 【新增步骤 2】将自动累加的历史 JSON 数据提交回仓库，确保每天数据不丢失
+      - name: Commit and push historical data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add kol_history_data.json
+          # 使用 || echo 容错：如果当天数据完全没变，不会因为 commit 失败而导致整个流报错停止
+          git commit -m "Auto-update historical KOL data [skip ci]" || echo "No changes to commit"
+          git push
+
+      # 【新增步骤 3】将生成的 index.html 部署到 GitHub Pages (供您的 Notion 嵌入使用)
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./ 
+          publish_branch: gh-pages

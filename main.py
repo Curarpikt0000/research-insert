@@ -67,4 +67,107 @@ def fetch_kol_insights():
         print(f"⚠️ 触发 JSON 解析异常 ({e})。模型输出存在瑕疵，尝试自动清洗...")
         
         # 清除大模型可能附带的 Markdown 标记
-        if raw_text.startswith("
+        if raw_text.startswith("```json"): 
+            raw_text = raw_text[7:]
+        elif raw_text.startswith("```"): 
+            raw_text = raw_text[3:]
+            
+        if raw_text.endswith("```"): 
+            raw_text = raw_text[:-3]
+            
+        raw_text = raw_text.strip()
+        
+        # 修复最常见的错误：数组或对象末尾多余的逗号
+        raw_text = re.sub(r',\s*}', '}', raw_text)
+        raw_text = re.sub(r',\s*]', ']', raw_text)
+        
+        try:
+            return json.loads(raw_text)
+        except Exception as e2:
+            print(f"❌ JSON 自动修复失败。")
+            print(f"尾部问题片段预览: {raw_text[-200:]}")
+            return [] # 返回空列表，防止程序崩溃
+
+def push_to_notion(data_list):
+    if not data_list:
+        print("⚠️ 没有解析到有效数据，跳过 Notion 写入。")
+        return
+        
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    filtered_data = [item for item in data_list if item.get("Name_of_KOL") not in ["AI Assistant", "AI", "System", None, ""]]
+    
+    for item in filtered_data:
+        try:
+            kol_name = str(item.get("Name_of_KOL", "Unknown")).replace(",", " ").strip()
+            title = str(item.get("Title", f"{kol_name} 的深度观点")).strip()
+            comments = str(item.get("comments", "")).strip()[:2000] 
+            suggestion = str(item.get("suggestion", "")).strip()[:2000]
+
+            properties = {
+                "Name": {"title": [{"text": {"content": title}}]},
+                "Date": {"date": {"start": today_str}},
+                "comments": {"rich_text": [{"text": {"content": comments}}]},
+                "suggestion": {"rich_text": [{"text": {"content": suggestion}}]}
+            }
+            
+            if kol_name and kol_name != "Unknown":
+                properties["Name of KOL"] = {"select": {"name": kol_name}}
+            if item.get("KOL_or_IB_View"):
+                properties["KOL or IB View"] = {"select": {"name": str(item.get("KOL_or_IB_View"))}}
+            if item.get("Sector"):
+                properties["Sector"] = {"select": {"name": str(item.get("Sector"))}}
+            if item.get("Detail_Sector"):
+                properties["Detail Sector"] = {"select": {"name": str(item.get("Detail_Sector"))}}
+
+            notion.pages.create(parent={"database_id": DATABASE_ID}, properties=properties)
+            print(f"✅ 成功深度写入 Notion Database: [{kol_name}] {title}")
+        except Exception as e:
+            print(f"❌ 写入 Notion 失败 [{item.get('Name_of_KOL')}]: {str(e)}")
+
+def save_historical_data(new_data):
+    """保存并合并历史数据，只保留最近7天，用于生成 Dashboard"""
+    if not new_data:
+        return
+        
+    file_name = "kol_history_data.json"
+    all_data = []
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+
+    for item in new_data:
+        item["Date"] = today_str
+        item["Timeframe"] = "24h"
+        if "Sentiment" not in item:
+            item["Sentiment"] = "中立" 
+
+    if os.path.exists(file_name):
+        with open(file_name, "r", encoding="utf-8") as f:
+            try:
+                all_data = json.load(f)
+            except Exception:
+                pass
+
+    valid_data = []
+    for item in all_data:
+        item_date_str = item.get("Date", today_str)
+        try:
+            item_date = datetime.datetime.strptime(item_date_str, "%Y-%m-%d")
+            days_diff = (datetime.datetime.now() - item_date).days
+            if days_diff <= 7:
+                if days_diff > 0:
+                    item["Timeframe"] = "7d"
+                valid_data.append(item)
+        except Exception:
+            pass 
+
+    valid_data.extend(new_data)
+    with open(file_name, "w", encoding="utf-8") as f:
+        json.dump(valid_data, f, ensure_ascii=False, indent=2)
+    print(f"✅ 历史情绪数据成功累加保存至 {file_name} (当前样本量: {len(valid_data)}条)")
+
+if __name__ == "__main__":
+    print("开始执行深度情报挖掘与逻辑推演...")
+    insights = fetch_kol_insights()
+    print("情报获取结束，准备后续处理...")
+    push_to_notion(insights)
+    save_historical_data(insights)
+    print("今日投研任务全部执行完毕！")

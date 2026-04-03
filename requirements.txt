@@ -1,0 +1,2 @@
+google-genai
+notion-client==2.2.1

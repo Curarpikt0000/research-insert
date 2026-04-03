@@ -1,5 +1,6 @@
 import os
 import json
+import re  # 【新增】正则表达式模块，用于自动修复损坏的 JSON
 import datetime
 from google import genai
 from google.genai import types
@@ -43,98 +44,27 @@ def fetch_kol_insights():
     - "comments": （核心逻辑链）**必须包含：提取的权威数值来源及其底层逻辑是否站得住脚。针对 FEMA 必须输出当日具体数值，无则标 N/A。**
     - "suggestion": 给出具体的交易动作或代码建议。
 
-    直接输出 JSON 数组，不要任何 Markdown 标记。
+    直接输出严格的 JSON 数组，必须以 [ 开始并以 ] 结束，不要任何多余的尾部逗号。
     """
     
+    # 【修复核心 1】：增加 max_output_tokens 防止输出过长被截断
     response = client.models.generate_content(
         model='gemini-2.5-flash', 
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             temperature=0.1, 
+            max_output_tokens=8192, 
         ),
     )
     
-    return json.loads(response.text)
-
-def push_to_notion(data_list):
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
-    filtered_data = [item for item in data_list if item.get("Name_of_KOL") not in ["AI Assistant", "AI", "System", None, ""]]
+    raw_text = response.text.strip()
     
-    for item in filtered_data:
-        try:
-            kol_name = str(item.get("Name_of_KOL", "Unknown")).replace(",", " ").strip()
-            title = str(item.get("Title", f"{kol_name} 的深度观点")).strip()
-            comments = str(item.get("comments", "")).strip()[:2000] 
-            suggestion = str(item.get("suggestion", "")).strip()[:2000]
-
-            properties = {
-                "Name": {"title": [{"text": {"content": title}}]},
-                "Date": {"date": {"start": today_str}},
-                "comments": {"rich_text": [{"text": {"content": comments}}]},
-                "suggestion": {"rich_text": [{"text": {"content": suggestion}}]}
-            }
-            
-            if kol_name and kol_name != "Unknown":
-                properties["Name of KOL"] = {"select": {"name": kol_name}}
-            if item.get("KOL_or_IB_View"):
-                properties["KOL or IB View"] = {"select": {"name": str(item.get("KOL_or_IB_View"))}}
-            if item.get("Sector"):
-                properties["Sector"] = {"select": {"name": str(item.get("Sector"))}}
-            if item.get("Detail_Sector"):
-                properties["Detail Sector"] = {"select": {"name": str(item.get("Detail_Sector"))}}
-
-            notion.pages.create(parent={"database_id": DATABASE_ID}, properties=properties)
-            print(f"✅ 成功深度写入 Notion Database: [{kol_name}] {title}")
-        except Exception as e:
-            print(f"❌ 写入 Notion 失败 [{item.get('Name_of_KOL')}]: {str(e)}")
-
-def save_historical_data(new_data):
-    """保存并合并历史数据，只保留最近7天，用于生成 Dashboard"""
-    file_name = "kol_history_data.json"
-    all_data = []
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
-
-    # 1. 为新提取的数据打上时间与周期标签
-    for item in new_data:
-        item["Date"] = today_str
-        item["Timeframe"] = "24h"
-        if "Sentiment" not in item:
-            item["Sentiment"] = "中立" # 容错保护
-
-    # 2. 读取现有的历史数据
-    if os.path.exists(file_name):
-        with open(file_name, "r", encoding="utf-8") as f:
-            try:
-                all_data = json.load(f)
-            except Exception:
-                pass
-
-    # 3. 清洗历史数据（超7天剔除，1-7天标记为 7d）
-    valid_data = []
-    for item in all_data:
-        item_date_str = item.get("Date", today_str)
-        try:
-            item_date = datetime.datetime.strptime(item_date_str, "%Y-%m-%d")
-            days_diff = (datetime.datetime.now() - item_date).days
-            if days_diff <= 7:
-                if days_diff > 0:
-                    item["Timeframe"] = "7d"
-                valid_data.append(item)
-        except Exception:
-            pass # 忽略日期格式错误的脏数据
-
-    # 4. 合并并持久化到本地
-    valid_data.extend(new_data)
-    with open(file_name, "w", encoding="utf-8") as f:
-        json.dump(valid_data, f, ensure_ascii=False, indent=2)
-    print(f"✅ 历史情绪数据成功累加保存至 {file_name} (当前样本量: {len(valid_data)}条)")
-
-if __name__ == "__main__":
-    print("开始执行深度情报挖掘与逻辑推演...")
-    insights = fetch_kol_insights()
-    print("情报获取成功，开始推送至 Notion...")
-    push_to_notion(insights)
-    print("开始沉淀历史情绪数据...")
-    save_historical_data(insights)
-    print("今日投研任务全部执行完毕！")
+    # 【修复核心 2】：加入容错自动修复机制 (防爆装甲)
+    try:
+        return json.loads(raw_text)
+    except json.JSONDecodeError as e:
+        print(f"⚠️ 触发 JSON 解析异常 ({e})。模型输出存在瑕疵，尝试自动清洗...")
+        
+        # 清除大模型可能附带的 Markdown 标记
+        if raw_text.startswith("
